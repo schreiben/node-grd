@@ -40,6 +40,7 @@
     var infoUrl = 'https://api.github.com/repos/' + org + '/' + project + '/releases/latest';
     request({ url: infoUrl, headers: { 'User-Agent': 'node-grd' } }, (err, res, body) => {
       var info = JSON.parse(body);
+      console.dir(info);
       var artifactAsset = info.assets.find(
         item => item.name.startsWith(artifact) && item.name.endsWith('tar.gz')
       );
