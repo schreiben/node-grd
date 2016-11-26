@@ -33,20 +33,28 @@
   const ProgressBar = require('progress');
 
   const install = exports.install = (org, project, artifact, callback) => {
-    caption = caption || '';
     callback = callback || (() => {});
     rmdir(artifact);
     var infoUrl = 'https://api.github.com/repos/' + org + '/' + project + '/releases/latest';
-    request(infoUrl, (err, res, body) => {
+    request({ url: infoUrl, headers: { 'User-Agent': 'node-grd' } }, (err, res, body) => {
       var info = JSON.parse(body);
-      var artifact = info.assets.find(
+      console.dir(info);
+      var artifactAsset = info.assets.find(
         item => item.name.startsWith(artifact) && item.name.endsWith('tar.gz')
       );
-      if (artifact)
+      if (artifactAsset) {
         request
-          .get(artifact.url)
+          .get({
+            url: artifactAsset.browser_download_url,
+            headers: {
+              connection: 'keep-alive',
+              'User-Agent': 'node-grd'
+            },
+            agent: false
+          })
           .on('response', res => {
             var len = parseInt(res.headers['content-length'], 10);
+            console.log(len);
             var bar = new ProgressBar('  downloading and preparing ' + artifact + ' [:bar] :percent :etas', {
               complete: '=',
               incomplete: ' ',
@@ -59,10 +67,10 @@
             console.error(`problem with request: ${err.message}`);
             callback(err);
           })
-          .on('end', callback)
           .pipe(zlib.createUnzip())
-          .pipe(tar.extract(dir));
-      else {
+          .pipe(tar.extract(artifact))
+          .on('end', callback);
+      } else {
         var msg = 'There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.';
         console.error(msg);
         callback(msg);
