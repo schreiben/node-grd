@@ -26,15 +26,17 @@
 (function(){
 
   const fs = require('fs');
+  const path = require('path');
   const rmdir = require('rmdir');
   const zlib = require('zlib');
   const tar = require('tar-fs');
   const request = require('request');
   const ProgressBar = require('progress');
 
-  const install = exports.install = (org, project, artifact, callback) => {
+  const install = exports.install = (org, project, dir, artifact, callback) => {
     callback = callback || (() => {});
-    rmdir(artifact);
+    var artifactDir = path.join(dir, artifact);
+    rmdir(artifactDir);
     var infoUrl = 'https://api.github.com/repos/' + org + '/' + project + '/releases/latest';
     request({ url: infoUrl, headers: { 'User-Agent': 'node-grd' } }, (err, res, body) => {
       var info = JSON.parse(body);
@@ -53,7 +55,6 @@
           })
           .on('response', res => {
             var len = parseInt(res.headers['content-length'], 10);
-            console.log(len);
             var bar = new ProgressBar('  downloading and preparing ' + artifact + ' [:bar] :percent :etas', {
               complete: '=',
               incomplete: ' ',
@@ -66,9 +67,9 @@
             console.error(`problem with request: ${err.message}`);
             callback(err);
           })
+          .on('end', callback)
           .pipe(zlib.createUnzip())
-          .pipe(tar.extract(artifact))
-          .on('end', callback);
+          .pipe(tar.extract(artifactDir));
       } else {
         var msg = 'There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.';
         console.error(msg);
@@ -77,12 +78,13 @@
     });
   };
 
-  const smoketest = exports.smoketest = callback => {
-    install('schreiben', 'node-grd', 'dummy', err => {
-      if(err)
-        callback(false);
-      callback(fs.readFileSync('dummy/dummy.txt', 'utf8') === 'Hello, World!');
-    });
-  };
+  const smoketest = exports.smoketest = callback =>
+    install(
+      'schreiben',
+      'node-grd',
+      __dirname,
+      'dummy',
+      err => callback(!err || fs.readFileSync(path.join(__dirname, 'dummy', 'dummy.txt'), 'utf8') === 'Hello, World!')
+    );
 
 })();

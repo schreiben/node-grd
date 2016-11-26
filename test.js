@@ -21,4 +21,8 @@
  * SOFTWARE.
  */
 
-require('.').smoketest(result => require('process').exit(result ? 0 : 1));
+require('.').smoketest(result => {
+  console.log('Testing...');
+  console.log(result ? 'Success' : 'Failed');
+  require('process').exit(result ? 0 : 1);
+});
