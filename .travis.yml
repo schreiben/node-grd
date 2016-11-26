@@ -12,3 +12,4 @@ deploy:
   file: resources/dummy.tar.gz
   on:
     repo: schreiben/node-grd
+    branch: release

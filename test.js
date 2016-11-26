@@ -21,5 +21,4 @@
  * SOFTWARE.
  */
 
-require('process').exit(0);
-//require('.').smoketest(result => require('process').exit(result ? 0 : 1));
+require('.').smoketest(result => require('process').exit(result ? 0 : 1));
