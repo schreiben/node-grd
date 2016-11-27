@@ -39,42 +39,45 @@
     rmdir(artifactDir);
     var infoUrl = 'https://api.github.com/repos/' + org + '/' + project + '/releases/latest';
     request({ url: infoUrl, headers: { 'User-Agent': 'node-grd' } }, (err, res, body) => {
-      var info = JSON.parse(body);
-      console.dir(info);
-      var artifactAsset = info.assets.find(
-        item => item.name.startsWith(artifact) && item.name.endsWith('tar.gz')
-      );
-      if (artifactAsset) {
-        request
-          .get({
-            url: artifactAsset.browser_download_url,
-            headers: {
-              connection: 'keep-alive',
-              'User-Agent': 'node-grd'
-            },
-            agent: false
-          })
-          .on('response', res => {
-            var len = parseInt(res.headers['content-length'], 10);
-            var bar = new ProgressBar('  downloading and preparing ' + artifact + ' [:bar] :percent :etas', {
-              complete: '=',
-              incomplete: ' ',
-              width: 80,
-              total: len
-            });
-            res.on('data', chunk => bar.tick(chunk.length));
-          })
-          .on('error', err => {
-            console.error(`problem with request: ${err.message}`);
-            callback(err);
-          })
-          .on('end', callback)
-          .pipe(zlib.createUnzip())
-          .pipe(tar.extract(artifactDir));
+      if (err) {
+        callback(err);
       } else {
-        var msg = 'There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.';
-        console.error(msg);
-        callback(msg);
+        var info = JSON.parse(body);
+        var artifactAsset = info.assets.find(
+          item => item.name.startsWith(artifact) && item.name.endsWith('tar.gz')
+        );
+        if (artifactAsset) {
+          request
+            .get({
+              url: artifactAsset.browser_download_url,
+              headers: {
+                connection: 'keep-alive',
+                'User-Agent': 'node-grd'
+              },
+              agent: false
+            })
+            .on('response', res => {
+              var len = parseInt(res.headers['content-length'], 10);
+              var bar = new ProgressBar('  downloading and preparing ' + artifact + ' [:bar] :percent :etas', {
+                complete: '=',
+                incomplete: ' ',
+                width: 80,
+                total: len
+              });
+              res.on('data', chunk => bar.tick(chunk.length));
+            })
+            .on('error', err => {
+              console.error(`problem with request: ${err.message}`);
+              callback(err);
+            })
+            .on('end', callback)
+            .pipe(zlib.createUnzip())
+            .pipe(tar.extract(artifactDir));
+        } else {
+          var msg = 'There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.';
+          console.error(msg);
+          callback(msg);
+        }
       }
     });
   };
