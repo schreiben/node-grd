@@ -43,6 +43,7 @@
         callback(err);
       } else {
         var info = JSON.parse(body);
+        console.log(info);
         var artifactAsset = info.assets.find(
           item => item.name.startsWith(artifact) && item.name.endsWith('tar.gz')
         );
