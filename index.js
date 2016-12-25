@@ -67,20 +67,18 @@
                 });
                 res.on('data', chunk => bar.tick(chunk.length));
               })
-              .on('error', err => {
-                console.error(`problem with request: ${err.message}`);
-                callback(err);
-              })
-              .on('end', callback)
+              .on('error', err => callback(`Problem during download: ${err.message}.`))
               .pipe(zlib.createUnzip())
-              .pipe(tar.extract(artifactDir));
+              .on('error', err => callback(`Problem during decompression: ${err.message}.`))
+              .pipe(tar.extract(artifactDir))
+              .on('error', err => callback(`Problem during unpackaging: ${err.message}.`))
+              .on('end', callback);
           } else {
-            var msg = 'There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.';
-            console.error(msg);
-            callback(msg);
+            callback('There was no artifact of name ' + artifact + ' in the latest release of ' + org + '/' + project + '.');
           }
-        } else
-          console.log((info && info.message) ? info.message : 'Unknown problem downloading the requested asset.');
+        } else {
+          callback((info && info.message) ? info.message : 'Unknown problem downloading asset');
+        }
       }
     });
   };
@@ -91,7 +89,7 @@
       'node-grd',
       __dirname,
       'dummy',
-      err => callback(!err || fs.readFileSync(path.join(__dirname, 'dummy', 'dummy.txt'), 'utf8') === 'Hello, World!')
+      err => callback(err || fs.readFileSync(path.join(__dirname, 'dummy', 'dummy.txt'), 'utf8') !== 'Hello, World!')
     );
 
 })();
