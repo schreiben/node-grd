@@ -33,12 +33,14 @@
   const request = require('request');
   const ProgressBar = require('progress');
 
-  const install = exports.install = (org, project, dir, artifact, callback) => {
+  const install = exports.install = (org, project, dir, artifact, callback, token) => {
     callback = callback || (() => {});
     var artifactDir = path.join(dir, artifact);
     rmdir(artifactDir);
     var infoUrl = 'https://api.github.com/repos/' + org + '/' + project + '/releases/latest';
-    request({ url: infoUrl, headers: { 'User-Agent': 'node-grd' } }, (err, res, body) => {
+    var headers = { 'User-Agent': 'node-grd' };
+    if (token) headers['Authorization'] = 'token ' + token;
+    request({ url: infoUrl, headers: headers }, (err, res, body) => {
       if (err) {
         callback(err);
       } else {
